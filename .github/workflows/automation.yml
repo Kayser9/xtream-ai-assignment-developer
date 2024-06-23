@@ -1,0 +1,35 @@
+
+
+name: AI Automated pipeline
+
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.12"
+    - name: Install python dependencies
+      working-directory: ./challenge1
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Execute main script
+      working-directory: ./challenge1/src
+      run: |
+        python main.py
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: pipeline_artifacts
+        path: |
+            challenge1/src/Logs
+            challenge1/src/Models
+
