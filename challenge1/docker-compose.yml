@@ -4,7 +4,7 @@ services:
   pipeline:
     image: ai_pipeline:latest
     build:
-      context: challenge1
+      context: .
       dockerfile: Dockerfile
     volumes:
       - logs:/app/Logs
