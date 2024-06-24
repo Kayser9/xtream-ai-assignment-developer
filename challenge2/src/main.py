@@ -8,12 +8,12 @@ WEB_DATASET = "https://raw.githubusercontent.com/xtreamsrl/xtream-ai-assignment-
 def get_model_instance(model_name: str) -> SupervisedModel:
     
     
-    if not model_name in AVAILABLE_MODELS:
+    if not model_name.lower() in AVAILABLE_MODELS:
         raise Exception(f"No model named {model_name}. Available models: {AVAILABLE_MODELS}")
     
-    if model_name == "linear":
+    if model_name.lower() == "linear":
         return LinearRegressionModel()
-    elif model_name == "xgboost":
+    elif model_name.lower() == "xgboost":
         return BoostLinearRegressionModel()
     
     ## Add for more models
@@ -28,7 +28,7 @@ def automated_pipeline(dataset_path: str) -> None:
         choosen_model = sys.argv[1]
     
         # Initiate the model class
-        model = get_model_instance(choosen_model)
+        model = get_model_instance(model_name=choosen_model)
         
         # Learning steps
         # 1. Process dataset
