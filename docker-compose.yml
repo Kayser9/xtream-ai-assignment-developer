@@ -1,0 +1,17 @@
+name: challenge1
+
+services:
+  pipeline:
+    image: ai_pipeline:latest
+    build:
+      context: challenge1
+      dockerfile: Dockerfile
+    volumes:
+      - logs:/app/Logs
+      - models:/app/Models
+    stdin_open: true
+    tty: true
+    
+volumes:
+  logs:
+  models:

@@ -1,0 +1,8 @@
+pandas==2.2.2
+pathlib==1.0.1
+fastapi==0.111.0
+matplotlib==3.9.0
+plotly==5.22.0
+joblib==1.4.2
+scikit-learn==1.5.0
+numpy==2.0.0
