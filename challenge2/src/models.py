@@ -16,14 +16,13 @@ from abc import ABC, abstractmethod
 from xgboost import XGBRegressor
 import optuna
 
-AVAILABLE_MODELS = ["linear","xgboost"] ## Add new model 
+AVAILABLE_MODELS = ["linear", "xgboost"]  ## Add new model
 
 
 class SupervisedModel(ABC):
     """Supervised Learning Model Abstract Class"""
 
     def __init__(self) -> None:
-        
         self.model_id = self.set_model_id()
         self.model_logger = CustomLogger(self.model_id)
         self.x_train = self.x_test = self.y_train = self.y_test = self.reg = None
@@ -39,7 +38,6 @@ class SupervisedModel(ABC):
         return model_id
 
     def import_dataset(self, dataset_path: str) -> pd.DataFrame:
-        
         try:
             self.model_logger.write_info("Importing dataset ...")
             df = pd.read_csv(dataset_path)
@@ -76,7 +74,7 @@ class SupervisedModel(ABC):
             self.model_logger.write_info("Making prediction...")
 
             pred = self.reg.predict(x_test)
-            #pred = np.exp(pred_log)
+            # pred = np.exp(pred_log)
 
             return pred
 
@@ -167,13 +165,11 @@ class SupervisedModel(ABC):
             raise Exception(e)
 
     def predict_from_existing_model(model_artifact_path: str, test_x: pd.DataFrame):
-        
         print("INNNNN")
-        model_class : SupervisedModel= joblib.load(model_artifact_path)
+        model_class: SupervisedModel = joblib.load(model_artifact_path)
         pred = model_class.predict(test_x)
         return pred
-        
-        
+
     @abstractmethod
     def data_pre_processing(
         self, dataset_path: str, test_size=0.2, random_state=42
@@ -183,7 +179,7 @@ class SupervisedModel(ABC):
 
 class LinearRegressionModel(SupervisedModel):
     """Supervised learning model implementing standard linear regression"""
-    
+
     def __init__(self) -> None:
         super().__init__()
         self.reg = LinearRegression()
@@ -194,7 +190,6 @@ class LinearRegressionModel(SupervisedModel):
         self.df = self.import_dataset(dataset_path)
 
         try:
-            
             self.model_logger.write_info("Processing Data")
             clean_df = clean_dataset(self.df)
             processed_df = clean_df.drop(columns=["depth", "table", "y", "z"])
@@ -207,90 +202,118 @@ class LinearRegressionModel(SupervisedModel):
             self.x_train, self.x_test, self.y_train, self.y_test = train_test_split(
                 x, y, test_size=test_size, random_state=random_state
             )
-            
-            self.model_logger.write_info("Transforming train y values into logarithmic values")
+
+            self.model_logger.write_info(
+                "Transforming train y values into logarithmic values"
+            )
             self.y_train = np.log(self.y_train)
-            
+
             self.model_logger.write_info("Data Ready for training.")
 
         except Exception as e:
             self.model_logger.conclude_session(msg=f"Error processing data: {e}")
             raise Exception(e)
-        
+
     def predict(self, x_test: pd.DataFrame) -> pd.Series:
-        
         pred_log = super().predict(x_test)
         self.model_logger.write_info("Transforming logarithmic prediction values")
         pred = np.exp(pred_log)
-        
+
         return pred
 
 
 class BoostLinearRegressionModel(SupervisedModel):
     """Supervised learning model implementing XGBoost model"""
-    
-    def __init__(self,) -> None:
+
+    def __init__(
+        self,
+    ) -> None:
         super().__init__()
         self.reg = XGBRegressor()
-        
+
     def data_pre_processing(
         self, dataset_path: str, test_size=0.2, random_state=42
     ) -> None:
         self.df = self.import_dataset(dataset_path)
 
         try:
-            
             self.model_logger.write_info("Processing Data")
             clean_df = clean_dataset(self.df)
-            
-            diamonds_processed_xgb = clean_df.copy()            
-            diamonds_processed_xgb['cut'] = pd.Categorical(diamonds_processed_xgb['cut'], categories=['Fair', 'Good', 'Very Good', 'Ideal', 'Premium'], ordered=True)
-            diamonds_processed_xgb['color'] = pd.Categorical(diamonds_processed_xgb['color'], categories=['D', 'E', 'F', 'G', 'H', 'I', 'J'], ordered=True)
-            diamonds_processed_xgb['clarity'] = pd.Categorical(diamonds_processed_xgb['clarity'], categories=['IF', 'VVS1', 'VVS2', 'VS1', 'VS2', 'SI1', 'SI2', 'I1'], ordered=True)
-            
-            self.x_train, self.x_test, self.y_train, self.y_test = train_test_split(diamonds_processed_xgb.drop(columns='price'), diamonds_processed_xgb['price'], test_size=0.2, random_state=42)
-                    
+
+            diamonds_processed_xgb = clean_df.copy()
+            diamonds_processed_xgb["cut"] = pd.Categorical(
+                diamonds_processed_xgb["cut"],
+                categories=["Fair", "Good", "Very Good", "Ideal", "Premium"],
+                ordered=True,
+            )
+            diamonds_processed_xgb["color"] = pd.Categorical(
+                diamonds_processed_xgb["color"],
+                categories=["D", "E", "F", "G", "H", "I", "J"],
+                ordered=True,
+            )
+            diamonds_processed_xgb["clarity"] = pd.Categorical(
+                diamonds_processed_xgb["clarity"],
+                categories=["IF", "VVS1", "VVS2", "VS1", "VS2", "SI1", "SI2", "I1"],
+                ordered=True,
+            )
+
+            self.x_train, self.x_test, self.y_train, self.y_test = train_test_split(
+                diamonds_processed_xgb.drop(columns="price"),
+                diamonds_processed_xgb["price"],
+                test_size=0.2,
+                random_state=42,
+            )
+
         except Exception as e:
             self.model_logger.conclude_session(msg=f"Error processing data: {e}")
             raise Exception(e)
-        
+
         self.optimize_model_parameters()
-                
-    
-    def optimize_model_parameters(self,):
-        
+
+    def optimize_model_parameters(
+        self,
+    ):
         try:
             self.model_logger.write_info("Optimizing parameters ...")
-            
-            study = optuna.create_study(direction='minimize', study_name='Diamonds XGBoost')
+
+            study = optuna.create_study(
+                direction="minimize", study_name="Diamonds XGBoost"
+            )
             study.optimize(self.objective, n_trials=100)
-            self.training_params = study.best_params,
-            self.reg = XGBRegressor(**study.best_params, enable_categorical=True, random_state=42)
-            
+            self.training_params = (study.best_params,)
+            self.reg = XGBRegressor(
+                **study.best_params, enable_categorical=True, random_state=42
+            )
+
             self.model_logger.write_info(f"Best parameters: {self.training_params}")
-        
+
         except Exception as e:
             self.model_logger.conclude_session(msg=f"Error optimizing parameters: {e}")
             raise Exception(e)
-        
 
-    def objective(self,trial: optuna.trial.Trial) -> float:
+    def objective(self, trial: optuna.trial.Trial) -> float:
         # Define hyperparameters to tune
         param = {
-            'lambda': trial.suggest_float('lambda', 1e-8, 1.0, log=True),
-            'alpha': trial.suggest_float('alpha', 1e-8, 1.0, log=True),
-            'colsample_bytree': trial.suggest_categorical('colsample_bytree', [0.3, 0.4, 0.5, 0.7]),
-            'subsample': trial.suggest_categorical('subsample', [0.5, 0.6, 0.7, 0.8, 0.9, 1.0]),
-            'learning_rate': trial.suggest_float('learning_rate', 1e-8, 1.0, log=True),
-            'n_estimators': trial.suggest_int('n_estimators', 100, 1000),
-            'max_depth': trial.suggest_int('max_depth', 3, 9),
-            'random_state': 42,
-            'min_child_weight': trial.suggest_int('min_child_weight', 1, 10),
-            'enable_categorical': True
+            "lambda": trial.suggest_float("lambda", 1e-8, 1.0, log=True),
+            "alpha": trial.suggest_float("alpha", 1e-8, 1.0, log=True),
+            "colsample_bytree": trial.suggest_categorical(
+                "colsample_bytree", [0.3, 0.4, 0.5, 0.7]
+            ),
+            "subsample": trial.suggest_categorical(
+                "subsample", [0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+            ),
+            "learning_rate": trial.suggest_float("learning_rate", 1e-8, 1.0, log=True),
+            "n_estimators": trial.suggest_int("n_estimators", 100, 1000),
+            "max_depth": trial.suggest_int("max_depth", 3, 9),
+            "random_state": 42,
+            "min_child_weight": trial.suggest_int("min_child_weight", 1, 10),
+            "enable_categorical": True,
         }
 
         # Split the training data into training and validation sets
-        x_train, x_val, y_train, y_val = train_test_split(self.x_train, self.y_train, test_size=0.2, random_state=42)
+        x_train, x_val, y_train, y_val = train_test_split(
+            self.x_train, self.y_train, test_size=0.2, random_state=42
+        )
 
         # Train the model
         model = XGBRegressor(**param)
@@ -303,9 +326,3 @@ class BoostLinearRegressionModel(SupervisedModel):
         mae = mean_absolute_error(y_val, preds)
 
         return mae
-
-
-        
-
-        
-        
