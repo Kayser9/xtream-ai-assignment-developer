@@ -68,4 +68,70 @@ Observability is key. Save every request and response made to the APIs to a **pr
 ---
 
 ## How to run
-Please fill this section as part of the assignment.
+
+In order to have a an prompt snapshot of my project, including the step by step evolution, I decided to generate a folder structure broken down it following the given challenges.
+
+Within challenge1 and challeng2 two github actions(workflow) have been deployed to train the models storing the internal training __Logs__ and the __Models Artifacts__ remotely.
+
+Since I hadn't a centralized remote storage system, I used multiple docker containers binded with two name volumes to ensure data persistence:
+
+- {dock_comp_name_prefix}_logs -> /app/Logs : used to store the training session logs
+- {dock_comp_name_prefix}_models -> /app/Models : used to store the model artifacts (Trained models in pkl format) and a "report.json" file containing all the model information
+
+By default, docker-compose will create also the two named volumes and the network.
+
+### Challenge 1
+__Run the linear model pipeline__:
+- __docker-compose run --build pipeline__ : build image -> run container (attach mode, i.e. output) -> End.
+- __docker-compose run --build pipeline /bin/bash__ : build image -> run container interactively (i.e input and output).
+--  Within the container's terminal, to train the model: __python main.py__
+
+- __docker compose down -v__ : Destroy container, network and volumes
+
+### Challenge 2
+
+- __docker-compose run --build pipeline__ : build image -> run container (attach mode, i.e. output) -> End.
+-- By default, the container will train the __xgboost__ model. 
+- __docker-compose run --build pipeline /bin/bash__ : build image -> run container interactively (i.e input and output).
+--  Within the container's terminal, to train the model: __python main.py <model_type>__ (linear/xgboost)
+
+- __docker compose down -v__ : Destroy container, network and volumes
+
+
+### Challenge 3
+I have deployed two container, the api server and the pipeline one. Both containers share the volumes, however, the api one has just read only permissions.
+
+To test the api (mapped on port 8080:8080), is possible to use the __call.rest__ file or by searching in the browser __localhost:8080/docs__.
+
+Two enpoint have been deployed and are both visible within the __call_rest__ file or directly in the __api.py__ script. Since both services start simultaneously, the Api won't find any available models until at least one model is trained.
+
+Within the api, the best performing model will be picked and exposed to the enpoints.
+
+
+#### Run both services together
+- __docker_compose up --build__: Run both containers in attach mode; append the -d flag to run them in background. The model training takes about 1 minute. After that it will be exposed by the api.
+
+#### Run just one service/container
+- __docker-compose run --build pipeline__ : build image -> run container (attach mode, i.e. output) -> End.
+-- By default, the container will train the __xgboost__ model. 
+
+- __docker-compose run --build -it --rm pipeline /bin/bash__ : build image -> run container interactively (i.e input and output).
+--  Within the container's terminal, to train the model: __python main.py <model_type>__ (linear/xgboost)
+
+- __docker-compose run -it --build --rm api__  : build image -> run container (attach mode) -> Start the server.
+
+- __docker-compose run --build --rm api /bin/bash__ : build image -> run container interactively (i.e input and output). To start the server: __uvicorn api:app --host 0.0.0.0 --port=8080. 
+
+
+- __docker compose down -v__ : Destroy container, network and volumes
+
+
+All data are persistent and available within the named volumes. However once they are destroyed, all the data they were storing will be lost.
+
+
+
+## Thank you very much for the opportunity,
+
+
+### Luca Checchin
+
