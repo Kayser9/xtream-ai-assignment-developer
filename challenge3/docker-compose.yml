@@ -1,0 +1,25 @@
+name: challenge3
+
+services:
+  pipeline:
+    image: ai_pipeline:latest
+    build:
+      context: .
+      dockerfile: Dockerfile_train_pipeline
+    volumes:
+      - logs:/app/Logs
+      - models:/app/Models
+  api:
+    image: ai_api:latest
+    build:
+      context: .
+      dockerfile: Dockerfile_api
+    ports:
+      - 8080:8080
+    volumes:
+      - logs:/app/Logs:ro
+      - models:/app/Models:ro
+
+volumes:
+  logs:
+  models:
